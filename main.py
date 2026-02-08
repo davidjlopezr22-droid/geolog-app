@@ -48,7 +48,7 @@ else:
 # --- LÓGICA DE INGENIERÍA ---
 # Cálculo de MSE (Energía Específica Mecánica)
 # Esto es lo que detecta si la mecha está rompiendo roca eficientemente
-df['MSE'] = (4 * df['WOB']) / (np.pi * diametro2) + (480 * df['RPM'] * df['TORQ']) / (diametro2 * df['ROP'])
+df['MSE'] = (4 * df['WOB']) / (np.pi * diametro) + (480 * df['RPM'] * df['TORQ']) / (diametro * df['ROP'])
 
 # Alerta de Gas Crítico
 gas_avg = df['TGAS'].mean()
