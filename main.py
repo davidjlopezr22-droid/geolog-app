@@ -16,7 +16,21 @@ diametro = st.sidebar.number_input("Diámetro de Mecha (pulgadas)", value=8.5)
 
 if archivo:
     df = pd.read_csv(archivo)
-    
+    # Diccionario de traducción: "Lo que busca el código": ["Lo que puede decir el Excel"]
+    traduccion = {
+        'RPM': ['ROT', 'RPM_SURF', 'RPM_MEAS', 'VEL_ROT', 'ROTACION'],
+        'DEPTH': ['PROF', 'HOLE_DEPTH', 'BIT_DEPTH', 'PROFUNDIDAD'],
+        'WOB': ['WEIGHT', 'PESO', 'CARGA'],
+        'TORQ': ['TORQUE', 'TORSION'],
+        'ROP': ['VEL_PERF', 'RATE_OF_PENETRATION'],
+        'TGAS': ['GAS', 'TOTAL_GAS', 'GAS_TOT']
+    }
+
+    # Esta lógica renombra automáticamente si encuentra un sinónimo
+    for oficial, sinonimos in traduccion.items():
+        for col in df.columns:
+            if col.upper() in sinonimos or col.upper() == oficial:
+                df.rename(columns={col: oficial}, inplace=True)
     # Limpiamos los nombres (quita espacios y pone todo en mayúsculas)
     df.columns = [c.strip().upper() for c in df.columns]
     
