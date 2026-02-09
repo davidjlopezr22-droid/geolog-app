@@ -86,4 +86,18 @@ if df is not None:
         st.download_button("Bajar PDF", data=pdf_bytes, file_name="Reporte_Geolog.pdf")
 else:
     st.info("👋 David, carga un archivo CSV o presiona 'Activar Modo Demo' para comenzar la presentación.")
+    # --- SECCIÓN DE CRÉDITOS Y CONTACTO ---
+st.markdown("---")
+with st.expander("ℹ️ Información del Desarrollador y Propiedad Intelectual"):
+    st.write("""
+    Desarrollador Principal: David Jose Lopez Ramirez  
+    DNI: 96048982  
+    Proyecto: Geolog Surface Logging Analytics  
+    Versión: 1.0.0 (Febrero 2026)
+    
+    Este software ha sido desarrollado como una herramienta de optimización para la industria del Oil & Gas. 
+    Todos los algoritmos de cálculo de MSE y detección de riesgos son propiedad del desarrollador.
+    
+    Para consultoría técnica o licencias corporativas, contactar al desarrollador.
+    """)
     
