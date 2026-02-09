@@ -1,32 +1,35 @@
 from fpdf import FPDF
-import io
 
-def generar_pdf(df_alertas):
+def generar_pdf(df_res):
     pdf = FPDF()
     pdf.add_page()
     
-    # Encabezado Profesional
+    # Encabezado con tu marca personal
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, "Reporte de Analitica: Geolog Surface Logging", ln=True, align='C')
-    
-    pdf.set_font("Arial", '', 12)
-    pdf.cell(200, 10, "Consultor: David Jose Lopez Ramirez | DNI: 96048982", ln=True, align='C')
+    pdf.cell(200, 10, "GEOLOG SURFACE LOGGING ANALYTICS", ln=True, align='C')
+    pdf.set_font("Arial", '', 11)
+    pdf.cell(200, 7, "Consultor Tecnico: David Jose Lopez Ramirez", ln=True, align='C')
+    pdf.cell(200, 7, "DNI: 96048982", ln=True, align='C')
     pdf.ln(10)
 
-    # Cuerpo del Reporte
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(200, 10, "Resumen de Alertas y Operacion", ln=True)
-    pdf.ln(5)
-    
+    # Resumen Tecnico
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(200, 10, "Resumen del Intervalo Analizado:", ln=True)
     pdf.set_font("Arial", '', 11)
-    if not df_alertas.empty:
-        pdf.multi_cell(0, 10, f"Se han detectado {len(df_alertas)} eventos de interes (incrementos de gas o variaciones de eficiencia).")
-        pdf.ln(5)
-        # Listar las primeras profundidades con alerta
-        profundidades = df_alertas['DEPTH'].head(10).tolist()
-        pdf.multi_cell(0, 10, f"Profundidades criticas detectadas (m): {profundidades}")
+    
+    prof_max = df_res['DEPTH'].max() if 'DEPTH' in df_res.columns else "N/D"
+    mse_avg = int(df_res['MSE'].mean()) if 'MSE' in df_res.columns else 0
+    
+    pdf.cell(200, 8, f"- Profundidad Maxima: {prof_max} m", ln=True)
+    pdf.cell(200, 8, f"- Eficiencia Mecanica Promedio (MSE): {mse_avg} psi", ln=True)
+    
+    # Alertas
+    if 'ALERTA_GAS' in df_res.columns and df_res['ALERTA_GAS'].any():
+        pdf.set_text_color(255, 0, 0)
+        pdf.cell(200, 8, "- ESTADO: Se detectaron anomalias criticas de gas.", ln=True)
+        pdf.set_text_color(0, 0, 0)
     else:
-        pdf.cell(200, 10, "No se detectaron anomalias criticas en el intervalo analizado.", ln=True)
+        pdf.cell(200, 8, "- ESTADO: Operacion dentro de parametros normales.", ln=True)
 
-    # Convertir a bytes para Streamlit
-    return pdf.output(dest='S').encode('latin-1')
+    # Limpieza de caracteres para evitar errores de codificación
+    return pdf.output(dest='S').encode('latin-1', 'ignore')
