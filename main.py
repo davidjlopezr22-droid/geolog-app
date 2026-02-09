@@ -15,8 +15,32 @@ archivo = st.file_uploader("Cargar archivo de salida de Geolog (CSV)", type="csv
 diametro = st.sidebar.number_input("Diámetro de Mecha (pulgadas)", value=8.5)
 
 if archivo:
-    # Leer datos
     df = pd.read_csv(archivo)
+    
+    # Limpiamos los nombres (quita espacios y pone todo en mayúsculas)
+    df.columns = [c.strip().upper() for c in df.columns]
+    
+    # ESTO ES NUEVO: Te mostrará en la pantalla qué columnas encontró
+    st.write("### Columnas detectadas en tu archivo:")
+    st.info(f"{list(df.columns)}")
+    
+    # Definimos lo que necesitamos
+    columnas_necesarias = ['DEPTH', 'WOB', 'RPM', 'TORQ', 'ROP', 'TGAS']
+    
+    # Verificamos qué falta
+    faltantes = [col for col in columnas_necesarias if col not in df.columns]
+    
+    if not faltantes:
+        try:
+            df_res = calcular_metricas(df, diametro)
+            st.success("✅ Datos procesados con éxito")
+            # ... (aquí sigue el resto de tu código de gráficos)
+        except Exception as e:
+            st.error(f"Error en el cálculo: {e}")
+    else:
+        st.error(f"❌ Error: Faltan las siguientes columnas: {faltantes}")
+        st.warning("Debes renombrar las columnas en tu CSV original para que coincidan.")
+    
     
     # Procesar con el motor que creamos en engine.py
     try:
