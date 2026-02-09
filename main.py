@@ -3,78 +3,73 @@ import pandas as pd
 import numpy as np
 from engine import calcular_metricas
 
-# Configuración de Marca - David Jose Lopez Ramirez
 st.set_page_config(page_title="Geolog Intelligence Hub", layout="wide")
 st.title("📊 Geolog Intelligence Hub")
-st.markdown("### Desarrollado por: David Jose Lopez Ramirez")
+st.markdown("### David Jose Lopez Ramirez | Geolog Surface Logging")
 
-# Panel Lateral
-st.sidebar.header("Configuración")
-archivo = st.sidebar.file_uploader("Subir CSV o LAS", type=["csv", "txt"])
+archivo = st.sidebar.file_uploader("Subir Archivo (LAS o CSV)", type=["csv", "txt"])
 diametro = st.sidebar.number_input("Diámetro de Mecha (pulg)", value=8.5)
-boton_demo = st.sidebar.button("🚀 Modo Demo")
 
-df = None
+def eliminar_columnas_duplicadas(df):
+    cols = pd.Series(df.columns)
+    for dup in cols[cols.duplicated()].unique(): 
+        cols[cols[cols == dup].index.values.tolist()] = [dup + '_' + str(i) if i != 0 else dup for i in range(sum(cols == dup))]
+    df.columns = cols
+    return df
 
-# Procesamiento de Archivo
 if archivo:
     try:
-        # Detectar si es un archivo tipo LAS (como PRUEVA 1)
-        content = archivo.getvalue().decode("utf-8").splitlines()
-        skip = 0
-        for i, line in enumerate(content):
-            if line.startswith('~A'): # Los datos empiezan después de esta marca
-                skip = i + 1
+        contenido = archivo.getvalue().decode("utf-8").splitlines()
+        linea_datos = 0
+        nombres_curvas = []
+
+        for i, linea in enumerate(contenido):
+            if linea.startswith('~C'):
+                j = i + 1
+                while j < len(contenido) and not contenido[j].startswith('~'):
+                    curva = contenido[j].strip().split('.')[0].split()[0]
+                    if curva: nombres_curvas.append(curva.upper())
+                    j += 1
+            if linea.startswith('~A'):
+                linea_datos = i + 1
                 break
         
         archivo.seek(0)
-        df = pd.read_csv(archivo, sep='\s+', skiprows=skip) if skip > 0 else pd.read_csv(archivo)
         
-        # LIMPIEZA DE COLUMNAS: Quita unidades y espacios (ej: 'ROPA.m/h' -> 'ROPA')
-        df.columns = [c.split('.')[0].strip().upper() for c in df.columns]
+        if linea_datos > 0:
+            df = pd.read_csv(archivo, sep='\s+', skiprows=linea_datos, names=nombres_curvas if nombres_curvas else None)
+        else:
+            df = pd.read_csv(archivo)
+            df.columns = [c.split('.')[0].strip().upper() for c in df.columns]
+
+        # REGLA CRÍTICA: Eliminar duplicados antes de procesar
+        df = eliminar_columnas_duplicadas(df)
+
+        df_res = calcular_metricas(df, diametro)
+
+        # Dashboard
+        c1, c2, c3 = st.columns(3)
+        prof = df_res['DEPTH'].max() if 'DEPTH' in df_res.columns else "N/A"
+        c1.metric("Profundidad", f"{prof} m")
         
-        # Mapeo de sinónimos para que coincidan con engine.py
-        mapeo = {'GASTOTAL': 'TGAS', 'ROP': 'ROPA', 'WEIGHT': 'WOB'}
-        df.rename(columns=mapeo, inplace=True)
+        mse_prom = int(df_res['MSE'].mean()) if 'MSE' in df_res.columns else 0
+        c2.metric("MSE Promedio", f"{mse_prom} psi")
         
+        alerta = "ALTO" if 'ALERTA_GAS' in df_res.columns and df_res['ALERTA_GAS'].any() else "BAJO"
+        c3.metric("Riesgo detectado", alerta)
+
+        if 'DEPTH' in df_res.columns and 'MSE' in df_res.columns:
+            st.subheader("Visualización de Energía Específica")
+            st.line_chart(df_res.set_index('DEPTH')['MSE'])
+        
+        st.write("#### Vista previa de datos")
+        st.dataframe(df_res.head())
+
     except Exception as e:
-        st.error(f"Error al procesar el archivo: {e}")
-
-elif boton_demo:
-    df = pd.DataFrame({
-        'DEPTH': np.linspace(1000, 1100, 50),
-        'WOB': np.random.uniform(10, 20, 50),
-        'ROPA': np.random.uniform(15, 30, 50),
-        'TGAS': np.random.uniform(1, 5, 50)
-    })
-
-# Ejecución y Visualización
-if df is not None:
-    # Llamar al motor corregido
-    df_res = calcular_metricas(df, diametro)
-
-    # Mostrar Métricas de forma segura (usando .get para evitar KeyErrors)
-    c1, c2, c3 = st.columns(3)
-    
-    prof = df_res['DEPTH'].max() if 'DEPTH' in df_res.columns else "N/A"
-    c1.metric("Profundidad", f"{prof} m")
-    
-    mse_avg = int(df_res['MSE'].mean()) if 'MSE' in df_res.columns else 0
-    c2.metric("MSE Promedio", f"{mse_avg} psi")
-    
-    riesgo = "ALTO" if df_res['Alerta_Gas'].any() else "BAJO"
-    c3.metric("Riesgo de Gas", riesgo)
-
-    # Gráfico de MSE vs Profundidad
-    if 'MSE' in df_res.columns and 'DEPTH' in df_res.columns:
-        st.subheader("Gráfico de Energía Específica (MSE)")
-        st.line_chart(df_res.set_index('DEPTH')['MSE'])
-
-    st.write("#### Vista previa de datos procesados")
-    st.dataframe(df_res.head())
+        st.error(f"Error detectado: {e}")
 else:
-    st.info("David, carga el archivo para iniciar el análisis técnico.")
+    st.info("👋 David, por favor carga el archivo para iniciar.")
 
 st.markdown("---")
-st.caption("Propiedad de David Jose Lopez Ramirez | DNI: 96048982")
+st.caption("Propiedad Intelectual: David Jose Lopez Ramirez | DNI: 96048982")
     
